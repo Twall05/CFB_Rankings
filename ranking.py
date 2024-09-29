@@ -10,7 +10,7 @@ def load_image(logo, number):
     #replace underscores with spaces
     logo = logo.replace(' ', '_')
     image = Image.open(f"images/{logo}.png")
-    new_image = image.resize((100, 100))
+    new_image = image.resize((250, 250))
     st.image(new_image)
     #replce spaces with underscores
     logo = logo.replace('_', ' ')
