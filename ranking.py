@@ -1,41 +1,42 @@
 import pandas as pd
 import streamlit as st
-import glob
 from PIL import Image
+import datetime
+import os
 
 st.title('Ranking')
 
 
 def load_image(logo, number):
-    #replace underscores with spaces
     logo = logo.replace(' ', '_')
     image = Image.open(f"images/{logo}.png")
     new_image = image.resize((250, 250))
     st.image(new_image)
-    #replce spaces with underscores
     logo = logo.replace('_', ' ')
     st.write(f"{number} - {logo}")
-#load_image("Air_Force")
 
-#Load in all the teams, do this by reading in the CSV file and making it so each row is a team
+
+# Load in all the teams
 teams_df = pd.read_csv('teams.csv')
-
-# Extract the team names into a list, make any spaces in the team names underscores
-#team_names = teams_df['team_name'].str.replace(' ', '_').tolist()
 team_names = teams_df['team_name'].tolist()
 
+number_of_teams = len(team_names)
 ranked_teams = st.sidebar.radio("How many teams would you like to rank?", [5, 10, 12, 25])
 
 col1, col2, col3, col4, col5 = st.columns(5)
 
-def rank_team(number, collumn):
+# Create a list to hold selected team names
+selected_teams = []
+
+def rank_team(number, column):
     ranking = st.sidebar.selectbox(f'Ranking {number}', [''] + team_names)
     if ranking != '':
-        with collumn:
+        with column:
             load_image(ranking, number)
-        #remove the team from the list
-        #replace underscores with spaces
+        # Remove the selected team from the list
         team_names.remove(ranking)
+        selected_teams.append(ranking)
+
 
 if ranked_teams == 5:
     rank_team(1, col1)
@@ -93,3 +94,39 @@ elif ranked_teams == 25:
     rank_team(23, col3)
     rank_team(24, col4)
     rank_team(25, col5)
+
+# Command that gives exact date and time
+now = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+# Add a condition to enable the submit button only if the correct number of teams is selected
+if len(selected_teams) == ranked_teams:
+    if st.button("Submit"):
+        st.success(f"Successfully ranked {ranked_teams} teams!")
+        
+        # Save the selected teams to a DataFrame
+        selected_teams_df = pd.DataFrame(selected_teams, columns=['team_name'])
+
+        # Specify the directory
+        directory = "C:\\Users\\taylo\\CFB_ranking\\Data"
+        
+        # Make sure the directory exists
+        os.makedirs(directory, exist_ok=True)
+        
+        # Create the full file path
+        file_path = os.path.join(directory, f"{ranked_teams}_teams_ranked_teams_{now}.csv")
+
+        # Save the DataFrame to the specified directory
+        selected_teams_df.to_csv(file_path, index=False)
+
+        # Convert the DataFrame to CSV format in memory for download
+        csv = selected_teams_df.to_csv(index=False).encode('utf-8')
+        
+        # Create a download button to download the CSV file
+        st.download_button(
+            label="Download Ranked Teams CSV",
+            data=csv,
+            file_name=f"{ranked_teams}_teams_ranked_teams_{now}.csv",
+            mime="text/csv"
+        )
+else:
+    st.warning(f"Please rank exactly {ranked_teams} teams.")
